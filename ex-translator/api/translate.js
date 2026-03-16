@@ -1,17 +1,19 @@
-export default async function handler(req, res) {
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+const https = require('https');
 
-  const { text } = req.body;
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { text } = req.body || {};
+  if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'No text provided' });
   }
-
   if (text.length > 2000) {
-    return res.status(400).json({ error: 'Text too long (max 2000 chars)' });
+    return res.status(400).json({ error: 'Text too long' });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -35,47 +37,51 @@ Respond ONLY with a valid JSON object. No markdown. No explanation outside the J
   "danger_level": "<exactly one of: Mild Chaos / Medium Chaos / Critical Meltdown / Witness Protection Recommended>"
 }`;
 
+  const bodyStr = JSON.stringify({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: `Translate this text from my ex: "${text.trim()}"` }]
+  });
+
   try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: `Translate this text from my ex: "${text.trim()}"` }]
-      })
+    const data = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(bodyStr)
+        }
+      };
+      const request = https.request(options, (response) => {
+        let raw = '';
+        response.on('data', chunk => raw += chunk);
+        response.on('end', () => {
+          try {
+            const parsed = JSON.parse(raw);
+            if (response.statusCode === 401) reject(new Error('auth'));
+            else if (response.statusCode !== 200) reject(new Error('api_error'));
+            else resolve(parsed);
+          } catch (e) { reject(new Error('parse_error')); }
+        });
+      });
+      request.on('error', reject);
+      request.write(bodyStr);
+      request.end();
     });
 
-    if (anthropicRes.status === 401) {
-      return res.status(500).json({ error: 'API key invalid — check your Vercel environment variable.' });
-    }
-
-    if (!anthropicRes.ok) {
-      const errBody = await anthropicRes.text();
-      console.error('Anthropic error:', errBody);
-      return res.status(502).json({ error: 'Upstream API error' });
-    }
-
-    const data = await anthropicRes.json();
-    const raw = (data.content || []).map(b => b.text || '').join('');
-    const clean = raw.replace(/```json|```/g, '').trim();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(clean);
-    } catch (_) {
-      return res.status(502).json({ error: 'Could not parse AI response' });
-    }
-
-    return res.status(200).json(parsed);
+    const textContent = (data.content || []).map(b => b.text || '').join('');
+    const clean = textContent.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    return res.status(200).json(result);
 
   } catch (err) {
-    console.error('Handler error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error:', err.message);
+    if (err.message === 'auth') return res.status(500).json({ error: 'API key invalid' });
+    return res.status(500).json({ error: 'Something went wrong: ' + err.message });
   }
-}
+};
