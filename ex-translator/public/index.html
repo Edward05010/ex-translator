@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ex Translator — Decode the Damage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0a0d;
+    --bg2: #1a1218;
+    --bg3: #221820;
+    --surface: #2a1f27;
+    --surface2: #332530;
+    --pink: #e8698a;
+    --pink2: #c44d6e;
+    --pink3: #f7a8bc;
+    --pink-dim: #7a2d45;
+    --cream: #f5ede8;
+    --cream2: #e8d5cc;
+    --text: #f5ede8;
+    --text2: #c4a8b0;
+    --text3: #8a6570;
+    --border: rgba(232,105,138,0.15);
+    --border2: rgba(232,105,138,0.3);
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-glow-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(196,77,110,0.12) 0%, transparent 70%);
+    top: -200px; right: -100px;
+    animation: floatGlow1 12s ease-in-out infinite;
+  }
+  .bg-glow-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(232,105,138,0.08) 0%, transparent 70%);
+    bottom: 100px; left: -100px;
+    animation: floatGlow2 15s ease-in-out infinite;
+  }
+  @keyframes floatGlow1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
+  @keyframes floatGlow2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+
+  .page { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* ── HEADER ── */
+  header { padding: 52px 0 40px; text-align: center; animation: fadeUp 0.8s ease both; }
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--pink3);
+    background: rgba(232,105,138,0.1);
+    border: 1px solid rgba(232,105,138,0.25);
+    border-radius: 999px;
+    padding: 5px 16px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.8rem, 8vw, 5rem);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+  }
+  h1 em { font-style: italic; color: var(--pink); display: block; }
+  .tagline {
+    margin-top: 16px;
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.6;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border2), transparent);
+    margin: 32px 0;
+  }
+
+  /* ── DEMO CARD ── */
+  .demo-section { animation: fadeUp 0.8s 0.15s ease both; }
+  .demo-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+  .demo-inner {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .demo-bubble-wrap { display: flex; align-items: flex-end; gap: 10px; }
+  .demo-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .demo-bubble {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 18px 18px 18px 4px;
+    padding: 12px 18px;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    color: var(--cream);
+  }
+  .demo-arrow { text-align: center; color: var(--pink); font-size: 18px; font-family: var(--font-mono); }
+  .demo-result {
+    background: linear-gradient(135deg, rgba(196,77,110,0.15), rgba(232,105,138,0.08));
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .demo-result-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--pink3);
+    margin-bottom: 6px;
+  }
+  .demo-result-text { font-size: 14px; line-height: 1.7; color: var(--cream2); }
+
+  /* ── CHAT ── */
+  .chat-section { animation: fadeUp 0.8s 0.25s ease both; }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title span { font-size: 11px; font-family: var(--font-mono); color: var(--text3); font-weight: 400; }
+
+  #chat-log {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    min-height: 180px;
+    max-height: 540px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+    margin-bottom: 16px;
+  }
+  #chat-log::-webkit-scrollbar { width: 4px; }
+  #chat-log::-webkit-scrollbar-track { background: transparent; }
+  #chat-log::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 999px; }
+
+  .msg { display: flex; flex-direction: column; gap: 4px; }
+  .msg.user { align-items: flex-end; }
+  .msg.bot  { align-items: flex-start; }
+  .msg-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.06em; margin-bottom: 2px; }
+
+  .chat-bubble {
+    max-width: 88%;
+    border-radius: 18px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .chat-bubble.user {
+    background: linear-gradient(135deg, var(--pink2), var(--pink-dim));
+    color: var(--cream);
+    border-bottom-right-radius: 4px;
+  }
+  .chat-bubble.bot-plain {
+    background: var(--surface);
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-bubble.thinking {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text3);
+    font-style: italic;
+    font-size: 13px;
+  }
+
+  /* ── TRANSLATION CARD ── */
+  .trans-card {
+    max-width: 96%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .trans-card-accent { height: 3px; background: linear-gradient(to right, var(--pink2), var(--pink3)); }
+  .trans-card-body { padding: 18px; }
+  .trans-original {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--pink3);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  .trans-row { margin-bottom: 12px; }
+  .trans-row-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .trans-row-value { font-size: 13.5px; line-height: 1.65; color: var(--cream2); }
+  .trans-footer {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .danger-pill {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .danger-mild     { background: rgba(186,117,23,0.2);  color: #FAC775; border: 1px solid rgba(186,117,23,0.3); }
+  .danger-medium   { background: rgba(212,83,126,0.2);  color: var(--pink3); border: 1px solid rgba(212,83,126,0.3); }
+  .danger-critical { background: rgba(226,75,74,0.2);   color: #F09595; border: 1px solid rgba(226,75,74,0.3); }
+  .danger-witness  { background: rgba(226,75,74,0.3);   color: #F7C1C1; border: 1px solid rgba(226,75,74,0.5); animation: dangerPulse 1.8s ease-in-out infinite; }
+  @keyframes dangerPulse { 0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,0)} 50%{box-shadow:0 0 12px 2px rgba(226,75,74,0.35)} }
+
+  .download-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .download-btn:hover { background: var(--surface); color: var(--pink3); border-color: var(--pink2); }
+
+  /* ── TYPING DOTS ── */
+  .dots span { display: inline-block; animation: dotBlink 1.3s infinite; color: var(--pink); font-size: 18px; line-height: 1; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotBlink { 0%,80%,100%{opacity:0.2;transform:translateY(0)} 40%{opacity:1;transform:translateY(-3px)} }
+
+  /* ── INPUT ── */
+  .input-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 4px 4px 4px 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within { border-color: var(--pink2); }
+  textarea#msg-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+    padding: 10px 0;
+    min-height: 44px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  textarea#msg-input::placeholder { color: var(--text3); }
+  .send-btn {
+    background: linear-gradient(135deg, var(--pink2), var(--pink-dim));
+    border: none;
+    border-radius: 10px;
+    width: 44px; height: 44px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .send-btn:hover { transform: scale(1.06); filter: brightness(1.15); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; filter: none; }
+  .send-btn svg { width: 18px; height: 18px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .hint-text {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  footer {
+    text-align: center;
+    padding-top: 48px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+  footer strong { color: var(--pink3); font-weight: 400; }
+
+  /* ── DOWNLOAD TEMPLATE ── */
+  #dl-template { position: fixed; left: -9999px; top: 0; width: 580px; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── HISTORY ── */
+  .history-section { animation: fadeUp 0.8s 0.35s ease both; margin-top: 40px; }
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .history-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--cream);
+  }
+  .history-header h2 span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text3);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text3);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: #993556; color: var(--pink3); }
+  .history-empty {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text3);
+    padding: 28px 0;
+    letter-spacing: 0.05em;
+  }
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .history-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .history-item:hover { border-color: var(--border2); background: var(--bg3); }
+  .history-item-left { flex: 1; min-width: 0; }
+  .history-original {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--pink3);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .history-translation {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .history-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .history-date {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .history-danger {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .history-restore-hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-align: center;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 500px) {
+    h1 { font-size: 2.4rem; }
+    .trans-footer { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="page">
+
+  <header>
+    <div class="badge">✦ AI-powered damage assessment ✦</div>
+    <h1>Ex <em>Translator</em></h1>
+    <p class="tagline">Paste their cryptic, passive-aggressive, emotionally illegal texts. Get the unfiltered truth — with brutal honesty and zero chill.</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="demo-section">
+    <div class="demo-label">✦ Example</div>
+    <div class="demo-inner">
+      <div class="demo-bubble-wrap">
+        <div class="demo-avatar">💔</div>
+        <div class="demo-bubble">"k."</div>
+      </div>
+      <div class="demo-arrow">↓ translation</div>
+      <div class="demo-result">
+        <div class="demo-result-label">What they actually meant</div>
+        <div class="demo-result-text">They are currently imagining your downfall and you should probably move countries. Consider a name change. Maybe a hat. They have already told six friends and their therapist.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="chat-section">
+    <div class="section-title">
+      Translate Their Texts
+      <span>shift+enter for newline</span>
+    </div>
+
+    <div id="chat-log">
+      <div class="msg bot">
+        <div class="msg-meta">ex translator</div>
+        <div class="chat-bubble bot-plain">
+          Welcome. Paste anything they sent you — "fine", "lol ok", "I just think it's interesting that you…", all of it.
+          I will tell you what they actually meant. With full dramatic honesty. 💌
+        </div>
+      </div>
+    </div>
+
+    <div class="input-wrap">
+      <textarea id="msg-input" rows="1"
+        placeholder='Paste their text here... e.g. "we should talk" or "no worries lol"'
+        oninput="autoResize(this)"
+        onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Translate">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="hint-text">enter to send &nbsp;·&nbsp; shift+enter for new line</div>
+  </div>
+
+  <div class="divider" style="margin-top:40px;"></div>
+
+  <div class="history-section" id="history-section">
+    <div class="history-header">
+      <h2>Your Translation History <span id="history-count"></span></h2>
+      <button class="clear-btn" onclick="clearHistory()">Clear all</button>
+    </div>
+    <div id="history-list">
+      <div class="history-empty">No translations yet — your decoded damage will appear here 💌</div>
+    </div>
+    <div class="history-restore-hint" id="restore-hint" style="display:none">click any card to re-read it</div>
+  </div>
+
+  <footer>
+    <p>Made with 💔 and <strong>too much therapy</strong> &nbsp;·&nbsp; Ex Translator &nbsp;·&nbsp; powered by Claude AI</p>
+  </footer>
+</div>
+
+<div id="dl-template"></div>
+
+<script>
+const chatLog  = document.getElementById('chat-log');
+const input    = document.getElementById('msg-input');
+const sendBtn  = document.getElementById('send-btn');
+const STORAGE_KEY = 'ex_translator_history';
+const MAX_HISTORY = 50;
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveHistory(history) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); } catch {}
+}
+function addToHistory(data) {
+  const history = loadHistory();
+  history.unshift({ ...data, savedAt: Date.now() });
+  if (history.length > MAX_HISTORY) history.splice(MAX_HISTORY);
+  saveHistory(history);
+  renderHistory();
+}
+function clearHistory() {
+  if (!confirm('Clear all your saved translations? This can\'t be undone.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderHistory();
+}
+
+// ── HISTORY UI ────────────────────────────────────────────────────────────────
+function formatDate(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return 'today ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7)  return diffDays + ' days ago';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+function dangerClass(level) {
+  if (!level) return 'danger-medium';
+  const l = level.toLowerCase();
+  if (l.includes('witness')) return 'danger-witness';
+  if (l.includes('critical')) return 'danger-critical';
+  if (l.includes('medium')) return 'danger-medium';
+  return 'danger-mild';
+}
+function renderHistory() {
+  const history = loadHistory();
+  const list = document.getElementById('history-list');
+  const countEl = document.getElementById('history-count');
+  const hintEl = document.getElementById('restore-hint');
+
+  countEl.textContent = history.length ? `(${history.length})` : '';
+
+  if (!history.length) {
+    list.innerHTML = `<div class="history-empty">No translations yet — your decoded damage will appear here 💌</div>`;
+    hintEl.style.display = 'none';
+    return;
+  }
+
+  hintEl.style.display = 'block';
+  list.innerHTML = history.map((item, i) => {
+    const dc = dangerClass(item.danger_level);
+    const pillStyle = dc === 'danger-witness'
+      ? 'background:rgba(226,75,74,0.3);color:#F7C1C1;border:1px solid rgba(226,75,74,0.5);'
+      : dc === 'danger-critical'
+      ? 'background:rgba(226,75,74,0.2);color:#F09595;border:1px solid rgba(226,75,74,0.3);'
+      : dc === 'danger-medium'
+      ? 'background:rgba(212,83,126,0.2);color:#f7a8bc;border:1px solid rgba(212,83,126,0.3);'
+      : 'background:rgba(186,117,23,0.2);color:#FAC775;border:1px solid rgba(186,117,23,0.3);';
+    return `
+      <div class="history-item" onclick="restoreCard(${i})">
+        <div class="history-item-left">
+          <div class="history-original">"${esc(item.original)}"</div>
+          <div class="history-translation">${esc(item.translation)}</div>
+        </div>
+        <div class="history-item-right">
+          <div class="history-date">${formatDate(item.savedAt)}</div>
+          <span class="history-danger" style="${pillStyle}">⚠ ${esc(item.danger_level)}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+function restoreCard(index) {
+  const history = loadHistory();
+  const item = history[index];
+  if (!item) return;
+  // Scroll to chat and re-render the full card
+  chatLog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => {
+    addUserMsg(item.original);
+    addTransCard(item);
+  }, 400);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function scrollChat() {
+  setTimeout(() => chatLog.scrollTop = chatLog.scrollHeight, 50);
+}
+function addUserMsg(text) {
+  const d = document.createElement('div');
+  d.className = 'msg user';
+  d.innerHTML = `<div class="msg-meta">you</div><div class="chat-bubble user">${esc(text)}</div>`;
+  chatLog.appendChild(d); scrollChat();
+}
+function addThinking() {
+  const d = document.createElement('div');
+  d.className = 'msg bot'; d.id = 'thinking';
+  d.innerHTML = `<div class="msg-meta">ex translator</div><div class="chat-bubble thinking"><span class="dots"><span>●</span><span>●</span><span>●</span></span> decoding emotional wreckage…</div>`;
+  chatLog.appendChild(d); scrollChat(); return d;
+}
+function removeThinking() { document.getElementById('thinking')?.remove(); }
+function addBotMsg(text) {
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+  d.innerHTML = `<div class="msg-meta">ex translator</div><div class="chat-bubble bot-plain">${esc(text)}</div>`;
+  chatLog.appendChild(d); scrollChat();
+}
+function addTransCard(data) {
+  const id = 'tc-' + Date.now();
+  const dc = dangerClass(data.danger_level);
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+  d.innerHTML = `
+    <div class="msg-meta">ex translator</div>
+    <div class="trans-card" id="${id}">
+      <div class="trans-card-accent"></div>
+      <div class="trans-card-body">
+        <div class="trans-original">"${esc(data.original)}"</div>
+        <div class="trans-row">
+          <div class="trans-row-label">What they actually meant</div>
+          <div class="trans-row-value">${esc(data.translation)}</div>
+        </div>
+        <div class="trans-row">
+          <div class="trans-row-label">The subtext</div>
+          <div class="trans-row-value">${esc(data.subtext)}</div>
+        </div>
+        <div class="trans-row">
+          <div class="trans-row-label">Survival tip</div>
+          <div class="trans-row-value">${esc(data.survival_tip)}</div>
+        </div>
+        <div class="trans-footer">
+          <span class="danger-pill ${dc}">⚠ ${esc(data.danger_level)}</span>
+          <button class="download-btn" onclick="downloadCard('${id}', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Save as image
+          </button>
+        </div>
+      </div>
+    </div>`;
+  chatLog.appendChild(d); scrollChat();
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────────────────────────
+async function downloadCard(cardId, btn) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  btn.textContent = 'Generating…'; btn.disabled = true;
+
+  const original    = card.querySelector('.trans-original')?.textContent?.trim() ?? '';
+  const rows        = card.querySelectorAll('.trans-row');
+  const translation = rows[0]?.querySelector('.trans-row-value')?.textContent?.trim() ?? '';
+  const subtext     = rows[1]?.querySelector('.trans-row-value')?.textContent?.trim() ?? '';
+  const survival    = rows[2]?.querySelector('.trans-row-value')?.textContent?.trim() ?? '';
+  const danger      = card.querySelector('.danger-pill')?.textContent?.replace('⚠','').trim() ?? '';
+  const dc          = dangerClass(danger);
+
+  const pillStyle = dc === 'danger-witness'
+    ? 'background:rgba(226,75,74,0.3);color:#F7C1C1;border:1px solid rgba(226,75,74,0.5);'
+    : dc === 'danger-critical'
+    ? 'background:rgba(226,75,74,0.2);color:#F09595;border:1px solid rgba(226,75,74,0.3);'
+    : dc === 'danger-medium'
+    ? 'background:rgba(212,83,126,0.2);color:#f7a8bc;border:1px solid rgba(212,83,126,0.3);'
+    : 'background:rgba(186,117,23,0.2);color:#FAC775;border:1px solid rgba(186,117,23,0.3);';
+
+  document.getElementById('dl-template').innerHTML = `
+    <div style="background:#0e0a0d;border:1px solid rgba(232,105,138,0.3);border-radius:20px;overflow:hidden;width:560px;font-family:DM Sans,sans-serif;">
+      <div style="height:5px;background:linear-gradient(to right,#c44d6e,#f7a8bc);"></div>
+      <div style="padding:28px 32px 28px;">
+        <div style="font-family:'Playfair Display',serif;font-size:11px;font-style:italic;color:rgba(247,168,188,0.6);margin-bottom:18px;letter-spacing:0.1em;">Ex Translator — decode the damage</div>
+        <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.3rem;color:#f7a8bc;line-height:1.4;margin-bottom:18px;border-bottom:1px solid rgba(232,105,138,0.2);padding-bottom:16px;">${original}</div>
+        <div style="margin-bottom:14px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(196,168,176,0.55);margin-bottom:4px;">What they actually meant</div>
+          <div style="font-size:13.5px;line-height:1.65;color:#e8d5cc;">${translation}</div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(196,168,176,0.55);margin-bottom:4px;">The subtext</div>
+          <div style="font-size:13.5px;line-height:1.65;color:#e8d5cc;">${subtext}</div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(196,168,176,0.55);margin-bottom:4px;">Survival tip</div>
+          <div style="font-size:13.5px;line-height:1.65;color:#e8d5cc;">${survival}</div>
+        </div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(232,105,138,0.15);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'DM Mono',monospace;font-size:11px;padding:4px 14px;border-radius:999px;${pillStyle}">⚠ ${danger}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(138,101,112,0.6);letter-spacing:0.08em;">extranslator.app</span>
+        </div>
+      </div>
+    </div>`;
+
+  try {
+    await new Promise(r => setTimeout(r, 120));
+    const canvas = await html2canvas(document.getElementById('dl-template').firstElementChild, {
+      backgroundColor: null, scale: 2, useCORS: true, logging: false
+    });
+    const link = document.createElement('a');
+    link.download = 'ex-translation.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) { console.error(e); }
+
+  document.getElementById('dl-template').innerHTML = '';
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Save as image`;
+  btn.disabled = false;
+}
+
+// ── MAIN SEND ─────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  addUserMsg(text);
+  addThinking();
+
+  try {
+    const res = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+
+    const data = await res.json();
+    removeThinking();
+
+    if (!res.ok) {
+      addBotMsg('⚠ ' + (data.error || 'Something went wrong. Try again?'));
+    } else if (data.translation) {
+      addTransCard(data);
+      addToHistory(data);   // ← save to localStorage
+    } else {
+      addBotMsg('The emotional damage was too complex even for me. Try again? 💔');
+    }
+  } catch(err) {
+    removeThinking();
+    addBotMsg('Network error — make sure the server is running. 💔');
+  }
+
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderHistory();
+</script>
+</body>
+</html>
